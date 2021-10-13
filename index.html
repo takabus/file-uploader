@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ファイルをアップロード</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+        integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css">
+    <link href="https://unpkg.com/filepond/dist/filepond.css" rel="stylesheet" />
+    <link href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css"
+        rel="stylesheet">
+    <link href="https://unpkg.com/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css" rel="stylesheet" />
+    <style>
+        h2 {
+            font-size: 1.5rem
+        }
+
+        .files__file__img {
+            max-width: 50vw;
+            max-height: 50vh;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar bg-primary text-white">
+        <h2>ファイルをアップロード</h2>
+    </nav>
+    <div class="container-fluid">
+        <div id="app">
+            <div class="files mt-2">
+
+                <h3>アップロード</h3>
+
+                <div class="form-group">
+                    <label for="file">送信するファイルを選択してください</label>
+                    <input type="file" id="file" name="file" multiple>
+                </div>
+
+            </div>
+
+            <div class="files">
+
+                <h3>アップロードされたファイル <button class="btn btn-sm btn-light" @click="getFiles"><i class="fa fa-sync fa-1x"></i>更新</button></h3>
+
+                <!-- 表示・非表示チェックボックス -->
+                <div class="form-check">
+                    <label class="form-check-label">
+                        <input type="checkbox" class="form-check-input" v-model="preview" id="" value="checkedValue"
+                            checked>
+                        プレビュー
+                    </label>
+                    <label class="form-check-label" v-show="preview">
+                        <input type="checkbox" class="form-check-input" v-model="detail" id="" value="checkedValue"
+                            checked>
+                        詳細
+                    </label>
+                </div>
+
+                <!-- プレビュー -->
+                <div class="d-flex flex-wrap" v-if="preview">
+
+                    <div class="files__file" v-for="file in files">
+                        <div class="files__file__name" v-show="detail">
+                            {{file}}
+                        </div>
+                        <a :href="file">
+                            <img class="files__file__img mt-2" v-bind:src="file" :alt="file">
+                        </a>
+                        <br>
+                        <button class="btn btn-danger" v-on:click="deleteFile(file)" v-show="detail">削除</button>
+                        <hr>
+                    </div>
+                </div>
+
+
+                <!-- ファイルリスト -->
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>ファイル名</th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="file in files">
+                            <td>
+                                <a :href="file">{{file}}</a>
+                                <br>
+                                <img class="files__file__img mt-2" v-bind:src="file" v-if="preview" :alt="file">
+
+                            </td>
+                            <td>
+                                <a class="btn btn-success" :href="file" download><i
+                                        class="fa fa-download fa-1x"></i></a>
+                            </td>
+                            <td>
+                                <button class="btn btn-danger" v-on:click="deleteFile(file)"><i
+                                        class="fa fa-trash-alt fa-1x"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+
+
+            </div>
+
+            <a href="upload.html">アップロード専用ページはこちら</a>
+
+        </div>
+    </div>
+    </div>
+    <!-- Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <!-- axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- filepond -->
+    <script src="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.js"></script>
+    <script src="https://unpkg.com/filepond/dist/filepond.js"></script>
+    <script>
+        var app = new Vue({
+            el: "#app",
+            data: {
+                pond: null,
+                files: null,
+                detail: false,
+                preview: false,
+            },
+            mounted() {
+
+                // FilePondを初期化する
+                this.initFilepond();
+                // アップロードされたファイルを取得する
+                this.getFiles();
+
+            },
+            methods: {
+
+                // FilePondを初期化する
+                initFilepond: function () {
+                    // プラグインを有効化する
+                    FilePond.registerPlugin(FilePondPluginImageEdit, FilePondPluginImagePreview);
+
+                    // #fileにFilePondを適用する
+                    this.pond = FilePond.create(document.querySelector('#file'))
+                        .setOptions({
+                            // POSTするURL
+                            server: 'post.php',
+                            // FilePondに表示する内容
+                            labelIdle: "ここをタップしてファイルを選択してください",
+                            // ファイルが選択されたら、自動的にアップロードをはじめる
+                            instantUpload: true,
+                        });
+
+                    // イベントを捉える
+                    const pond = document.querySelector('.filepond--root');
+                    // ファイルがアップロードされたら実行
+                    pond.addEventListener('FilePond:processfile', e => {
+                        console.log('File added', e.detail);
+
+                        // アップロードされたファイルを再取得する
+                        this.getFiles();
+                    });
+                },
+
+                // アップロードされたファイルを取得する
+                getFiles: function () {
+                    axios.get('get.php').then((res) => {
+                        this.files = res.data.files;
+                    });
+                },
+
+                // ファイルを削除する
+                deleteFile: function ($filename) {
+                    if (window.confirm($filename + "を削除してよろしいですか？")) {
+
+                        var formdata = new FormData();
+                        formdata.append("filename", $filename);
+
+                        axios.post('delete.php', formdata).then((res) => {
+                            this.getFiles();
+                        });
+
+                    }
+                },
+
+            }
+
+        })
+    </script>
+</body>
+
+</html>

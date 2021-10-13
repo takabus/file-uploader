@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ファイルをアップロード</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+        integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css">
+    <link href="https://unpkg.com/filepond/dist/filepond.css" rel="stylesheet" />
+    <link href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css"
+        rel="stylesheet">
+    <link href="https://unpkg.com/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css" rel="stylesheet" />
+    <style>
+        h2 {
+            font-size: 1.5rem
+        }
+
+        .files__file__img {
+            max-width: 50vw;
+            max-height: 50vh;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar bg-primary text-white">
+        <h2>ファイルをアップロード</h2>
+    </nav>
+    <div class="container-fluid">
+        <div id="app">
+            <div class="files mt-2">
+
+
+                <div class="form-group">
+                    <label style="font-size: 2em;color: crimson;" for="file">▼ここをタップして、送信してください。</label>
+                    <input type="file" id="file" name="file" multiple>
+                </div>
+
+                <div class="border border-primary p-2">
+                    <h3>写真を送る場合</h3>
+                    <p>
+                        ▲をタップして、「写真を撮る」をタップ
+                    </p>
+                    <h3>ファイルを送る場合</h3>
+                    <p>
+                        ▲をタップして、送信するファイルを選択してください
+                    </p>
+                    <p>緑になればアップロード完了です！</p>
+
+                </div>
+
+            </div>
+
+
+        </div>
+    </div>
+    <!-- Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <!-- axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- filepond -->
+    <script src="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.js"></script>
+    <script src="https://unpkg.com/filepond/dist/filepond.js"></script>
+    <script>
+        var app = new Vue({
+            el: "#app",
+            data: {
+                pond: null,
+                files: null,
+                detail: false,
+                preview: false,
+            },
+            mounted() {
+
+                // FilePondを初期化する
+                this.initFilepond();
+                // アップロードされたファイルを取得する
+                this.getFiles();
+
+            },
+            methods: {
+
+                // FilePondを初期化する
+                initFilepond: function () {
+                    // プラグインを有効化する
+                    FilePond.registerPlugin(FilePondPluginImageEdit, FilePondPluginImagePreview);
+
+                    // #fileにFilePondを適用する
+                    this.pond = FilePond.create(document.querySelector('#file'))
+                        .setOptions({
+                            // POSTするURL
+                            server: 'post.php',
+                            // FilePondに表示する内容
+                            labelIdle: "ここをタップ！",
+                            // ファイルが選択されたら、自動的にアップロードをはじめる
+                            instantUpload: true,
+                        });
+
+                    // イベントを捉える
+                    const pond = document.querySelector('.filepond--root');
+                    // ファイルがアップロードされたら実行
+                    pond.addEventListener('FilePond:processfile', e => {
+                        console.log('File added', e.detail);
+
+                        // アップロードされたファイルを再取得する
+                        this.getFiles();
+                    });
+                },
+
+                // アップロードされたファイルを取得する
+                getFiles: function () {
+                    axios.get('get.php').then((res) => {
+                        this.files = res.data.files;
+                    });
+                },
+
+                // ファイルを削除する
+                deleteFile: function ($filename) {
+                    if (window.confirm($filename + "を削除してよろしいですか？")) {
+
+                        var formdata = new FormData();
+                        formdata.append("filename", $filename);
+
+                        axios.post('delete.php', formdata).then((res) => {
+                            this.getFiles();
+                        });
+
+                    }
+                },
+
+            }
+
+        })
+    </script>
+</body>
+
+</html>
